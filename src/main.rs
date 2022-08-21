@@ -1,94 +1,71 @@
-extern crate piston_window;
+// Draw lines based on mouse position and events
 extern crate image as im;
+extern crate piston_window;
 extern crate vecmath;
 
 use piston_window::*;
-use vecmath::*;
+// use vecmath::*;
+use rand::Rng;
 use rusticate::plot_line;
 
 fn main() {
-    println!("first");
-    plot_line(1, 1, 8, 4);
-    // println!("second");
-    // plot_line(3, 20, 15, 2);
-    // let opengl = OpenGL::V3_2;
-    // let (width, height) = (300, 300);
-    // let mut window: PistonWindow =
-    //     WindowSettings::new("piston: paint", (width, height))
-    //     .exit_on_esc(true)
-    //     .graphics_api(opengl)
-    //     .build()
-    //     .unwrap();
+    let mut rng = rand::thread_rng();
+    let opengl = OpenGL::V3_2;
+    let (width, height) = (300, 300);
+    let mut window: PistonWindow = WindowSettings::new("piston: paint", (width, height))
+        .exit_on_esc(true)
+        .graphics_api(opengl)
+        .build()
+        .unwrap();
 
-    // let mut canvas = im::ImageBuffer::new(width, height);
-    // let mut draw = false;
-    // let mut texture_context = TextureContext {
-    //     factory: window.factory.clone(),
-    //     encoder: window.factory.create_command_buffer().into()
-    // };
-    // let mut texture: G2dTexture = Texture::from_image(
-    //         &mut texture_context,
-    //         &canvas,
-    //         &TextureSettings::new()
-    //     ).unwrap();
+    let mut canvas = im::ImageBuffer::new(width, height);
+    let mut texture_context = TextureContext {
+        factory: window.factory.clone(),
+        encoder: window.factory.create_command_buffer().into(),
+    };
+    let mut texture: G2dTexture =
+        Texture::from_image(&mut texture_context, &canvas, &TextureSettings::new()).unwrap();
 
-    // let mut last_pos: Option<[f64; 2]> = None;
+    let mut last_pos: Option<[f64; 2]> = None;
+    let mut start_pos: Option<[f64; 2]> = None;
+    let mut end_pos: Option<[f64; 2]> = None;
 
-    // while let Some(e) = window.next() {
-    //     if e.render_args().is_some() {
-    //         texture.update(&mut texture_context, &canvas).unwrap();
-    //         window.draw_2d(&e, |c, g, device| {
-    //             // Update texture before rendering.
-    //             texture_context.encoder.flush(device);
+    while let Some(e) = window.next() {
+        if e.render_args().is_some() {
+            texture.update(&mut texture_context, &canvas).unwrap();
+            window.draw_2d(&e, |c, g, device| {
+                // Update texture before rendering.
+                texture_context.encoder.flush(device);
 
-    //             clear([1.0; 4], g);
-    //             image(&texture, c.transform, g);
-    //         });
-    //     }
-    //     if let Some(button) = e.press_args() {
-    //         if button == Button::Mouse(MouseButton::Left) {
-    //             draw = true;
-    //         }
-    //     };
-    //     if let Some(button) = e.release_args() {
-    //         if button == Button::Mouse(MouseButton::Left) {
-    //             draw = false;
-    //             last_pos = None
-    //         }
-    //     };
-    //     if draw {
-    //         for pix in plot_line(3, 2, 150, 50) {
-    //             canvas.put_pixel(pix.0, pix.1, im::Rgba([0, 0, 255, 255]));
-    //         }
-    //         for pix in plot_line(3, 150, 150, 2) {
-    //             canvas.put_pixel(pix.0, pix.1, im::Rgba([255, 0, 0, 255]));
-    //         }
-    //         for pix in plot_line(3, 150, 150, 150) {
-    //             canvas.put_pixel(pix.0, pix.1, im::Rgba([0, 0, 0, 255]));
-    //         }
-
-    //         if let Some(pos) = e.mouse_cursor_args() {
-    //             let (x, y) = (pos[0] as f32, pos[1] as f32);
-
-    //             if let Some(p) = last_pos {
-    //                 let (last_x, last_y) = (p[0] as f32, p[1] as f32);
-    //                 let distance = vec2_len(vec2_sub(p, pos)) as u32;
-
-    //                 for i in 0..distance {
-    //                     let diff_x = x - last_x;
-    //                     let diff_y = y - last_y;
-    //                     let delta = i as f32 / distance as f32;
-    //                     let new_x = (last_x + (diff_x * delta)) as u32;
-    //                     let new_y = (last_y + (diff_y * delta)) as u32;
-    //                     if new_x < width && new_y < height {
-    //                         canvas.put_pixel(new_x, new_y, im::Rgba([0, 0, 0, 255]));
-    //                     };
-    //                 };
-    //             };
-
-    //             last_pos = Some(pos)
-    //         };
-
-    //     }
-    // }
+                clear([1.0; 4], g);
+                image(&texture, c.transform, g);
+            });
+        }
+        if let Some(pos) = e.mouse_cursor_args() {
+            last_pos = Some([pos[0], pos[1]]);
+        }
+        if let Some(button) = e.press_args() {
+            if button == Button::Mouse(MouseButton::Left) {
+                if let Some(lp) = last_pos {
+                    start_pos = Some([lp[0], lp[1]]);
+                }
+            }
+        };
+        if let Some(button) = e.release_args() {
+            if button == Button::Mouse(MouseButton::Left) {
+                if let Some(lp) = last_pos {
+                    end_pos = Some([lp[0], lp[1]]);
+                }
+                if let (Some(sp), Some(ep)) = (start_pos, end_pos) {
+                    // println!("spx {} spy {} epx {} epy {}", sp[0] as i32, sp[1] as i32, ep[0] as i32, ep[1] as i32);
+                    let red = rng.gen::<u8>();
+                    let green = rng.gen::<u8>();
+                    let blue = rng.gen::<u8>();
+                    for pix in plot_line(sp[0] as i32, sp[1] as i32, ep[0] as i32, ep[1] as i32) {
+                        canvas.put_pixel(pix.0, pix.1, im::Rgba([red, green, blue, 255]));
+                    }
+                }
+            }
+        }
+    }
 }
