@@ -1,3 +1,6 @@
+// CubicW is a 4-tuple of (x, y) weights for use with a Bezier curve
+type CubicW = ((u32, u32), (u32, u32), (u32, u32), (u32, u32));
+
 pub fn plot_line(x1_: i32, y1_: i32, x2_: i32, y2_: i32) -> Vec<(u32, u32)> {
     // Bresenham lines
     // Start off by flipping things around to determine whether to increment x or y
@@ -55,9 +58,33 @@ pub fn plot_line(x1_: i32, y1_: i32, x2_: i32, y2_: i32) -> Vec<(u32, u32)> {
     points
 }
 
+fn calc_bezier_cubic_point(t: f32, w: CubicW) -> (u32, u32) {
+    // Calculate a point on a Bezier curve given a parametric `t` and weight 4-tuple
+    let t2 = t * t;
+    let t3 = t2 * t;
+    let mt = 1.0 - t;
+    let mt2 = mt * mt;
+    let mt3 = mt2 * mt;
+    (
+        (w.0.0 as f32 * mt3 + w.1.0 as f32 * mt2 * t * 3.0 + w.2.0 as f32 * mt * t2 * 3.0 + w.3.0 as f32 * t3) as u32,
+        (w.0.1 as f32 * mt3 + w.1.1 as f32 * mt2 * t * 3.0 + w.2.1 as f32 * mt * t2 * 3.0 + w.3.1 as f32 * t3) as u32
+    )
+}
+
+pub fn plot_bezier(w: CubicW) -> Vec<(u32, u32)> {
+    // Plot a Bezier curve by iterating lines between control points
+    let out = vec![(0, 0)];
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn test_calc_bezier_cubic_point_do_it_run() {
+        let w = ((0, 0), (0, 0), (0, 0), (0, 0));
+        assert_ne!(plot_bezier(w).len(), 0)
+    }
     #[test]
     fn test_plot_line_horiz() {
         let points = vec![(1, 42), (2, 42), (3, 42), (4, 42), (5, 42)];
